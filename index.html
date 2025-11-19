@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Get Your Password</title>
+<style>
+    body { 
+        font-family: Arial, sans-serif; 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        height: 100vh; 
+        background: #f5f5f5; 
+    }
+    .container {
+        background: #fff;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        text-align: center;
+        max-width: 400px;
+        width: 90%;
+    }
+    #password {
+        font-size: 24px;
+        margin: 20px 0;
+        user-select: all;
+        border: 1px solid #ccc;
+        padding: 10px;
+        border-radius: 8px;
+        background: #f9f9f9;
+    }
+    button {
+        padding: 12px 25px;
+        background: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+    }
+    button:disabled {
+        background: #aaa;
+        cursor: not-allowed;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Your Password</h2>
+    <div id="password">Loading...</div>
+    <button id="copyBtn">Copy Password</button>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+    // TODO: Replace with your Firebase config
+    const firebaseConfig = {
+        apiKey: "AIzaSyBRdoRcOPvCOFJMthBA7rS_J8Bx1ZWWU3g",
+        authDomain: "appdatasave-bf93d.firebaseapp.com",
+        databaseURL: "https://appdatasave-bf93d-default-rtdb.firebaseio.com",
+        projectId: "appdatasave-bf93d",
+        storageBucket: "appdatasave-bf93d.appspot.com",
+        messagingSenderId: "401545013632",
+        appId: "1:401545013632:web:bc631e7813f8d6364db965"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Get UID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const uid = urlParams.get('uid');
+
+    const passwordDiv = document.getElementById('password');
+    const copyBtn = document.getElementById('copyBtn');
+
+    if(uid){
+        db.ref('keyG/user/' + uid + '/pass').once('value').then(snapshot => {
+            const pass = snapshot.val();
+            if(pass){
+                passwordDiv.textContent = pass;
+            } else {
+                passwordDiv.textContent = "No password found!";
+                copyBtn.disabled = true;
+            }
+        }).catch(err => {
+            passwordDiv.textContent = "Error fetching password!";
+            copyBtn.disabled = true;
+        });
+    } else {
+        passwordDiv.textContent = "UID missing!";
+        copyBtn.disabled = true;
+    }
+
+    copyBtn.addEventListener('click', () => {
+        const range = document.createRange();
+        range.selectNode(passwordDiv);
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(range);
+        try {
+            document.execCommand('copy');
+            window.getSelection().removeAllRanges();
+            alert('Password copied!');
+            // Notify Android app
+            if(window.AndroidApp){
+                window.AndroidApp.passwordCopied(passwordDiv.textContent);
+                copyBtn.disabled = true; // prevent multiple copies
+            }
+        } catch(err){
+            alert('Failed to copy!');
+        }
+    });
+</script>
+
+</body>
+</html>
